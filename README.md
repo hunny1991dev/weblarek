@@ -193,3 +193,5 @@ Presenter - презентер содержит основную логику п
 Методы класса:  
 `getProducts(): Promise<IProductsResponse>` — выполняет GET-запрос на эндпоинт /product/, возвращает промис с объектом, содержащим total (количество товаров) и items (массив товаров)  
 `createOrder(orderData: IOrderData): Promise<IOrderResponse>` — выполняет POST-запрос на эндпоинт /order, передаёт данные заказа, возвращает промис с объектом, содержащим id заказа и total (сумму заказа).  
+
+https://github.com/hunny1991dev/weblarek
