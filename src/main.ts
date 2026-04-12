@@ -1,9 +1,9 @@
 import './scss/styles.scss';
 import { Api } from './components/base/Api';
 import { WebLarekApi } from './components/WebLarekApi';
-import { Products } from './components/base/Models/Products';
-import { Basket } from './components/base/Models/Basket';
-import { Order } from './components/base/Models/Order';
+import { Products } from './components/Models/Products';
+import { Basket } from './components/Models/Basket';
+import { Order } from './components/Models/Order';
 import { API_URL } from './utils/constants';
 
 // 1. СОЗДАНИЕ ЭКЗЕМПЛЯРОВ

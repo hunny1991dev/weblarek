@@ -20,19 +20,14 @@ export interface IProduct {
 
 // Покупатель
 export interface IBuyer {
-    payment: TPayment;
+    payment: TPayment | null;
     email: string;
     phone: string;
     address: string;
 }
 
 // Тип для ошибок валидации данных покупателя
-export type TBuyerError = {
-    payment?: string;
-    email?: string;
-    phone?: string;
-    address?: string;
-}
+export type TBuyerError = Partial<Record<keyof IBuyer, string>>;
 
 // Ответ сервера на GET /product
 export interface IProductsResponse {

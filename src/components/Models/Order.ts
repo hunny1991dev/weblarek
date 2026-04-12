@@ -1,4 +1,4 @@
-import { IBuyer, TPayment, TBuyerError } from '../../../types';
+import { IBuyer, TPayment, TBuyerError } from '../../types';
 
 export class Order {
     private payment: TPayment | null = null;
@@ -24,7 +24,7 @@ export class Order {
 
     getBuyerData(): IBuyer {
         return {
-            payment: this.payment as TPayment,
+            payment: this.payment,
             email: this.email,
             phone: this.phone,
             address: this.address,
