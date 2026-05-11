@@ -2,7 +2,7 @@ import { Form, IFormData } from '../common/Form';
 import { IEvents } from '../base/Events';
 import { ensureElement } from '../../utils/utils';
 
-// Данные для формы заказа (шаг 1)
+// Данные для формы заказа
 export interface IOrderFormData {
     payment: 'card' | 'cash' | null;
     address: string;
@@ -10,7 +10,7 @@ export interface IOrderFormData {
 
 // Расширяем IFormData для валидации
 interface IOrderFormValidData extends IFormData {
-    payment: string;
+    payment: 'card' | 'cash' | null;
     address: string;
 }
 
@@ -22,53 +22,48 @@ export class OrderForm extends Form<IOrderFormValidData> {
     constructor(events: IEvents, container: HTMLFormElement) {
         super(events, container);
 
-        // Находим кнопки выбора оплаты и поле ввода адреса
         this.cardButton = ensureElement<HTMLButtonElement>('button[name="card"]', this.container);
         this.cashButton = ensureElement<HTMLButtonElement>('button[name="cash"]', this.container);
         this.addressInput = ensureElement<HTMLInputElement>('input[name="address"]', this.container);
 
-        // Слушатели на кнопки выбора оплаты
-        this.cardButton.addEventListener('click', () => this.setPayment('card'));
-        this.cashButton.addEventListener('click', () => this.setPayment('cash'));
+        this.cardButton.addEventListener('click', () => {
+            events.emit('order:payment:select', { payment: 'card' });
+        });
 
-        // Слушатель на ввод адреса
+        this.cashButton.addEventListener('click', () => {
+            events.emit('order:payment:select', { payment: 'cash' });
+        });
+
         this.addressInput.addEventListener('input', () => {
-            this.events.emit('order:address:change', { address: this.addressInput.value });
+            events.emit('order:address:change', { address: this.addressInput.value });
         });
     }
 
-    // Установить способ оплаты и обновить визуальное состояние кнопок
-    setPayment(payment: 'card' | 'cash') {
-        // Убираем активный класс у обеих кнопок
+    set payment(value: 'card' | 'cash' | null) {
         this.cardButton.classList.remove('button_alt-active');
         this.cashButton.classList.remove('button_alt-active');
-
-        // Добавляем активный класс выбранной кнопке
-        if (payment === 'card') {
+        
+        if (value === 'card') {
             this.cardButton.classList.add('button_alt-active');
-        } else {
+        } else if (value === 'cash') {
             this.cashButton.classList.add('button_alt-active');
         }
-
-        // Генерируем событие об изменении способа оплаты
-        this.events.emit('order:payment:change', { payment });
     }
 
-    // Получить текущие данные формы
-    getFormData(): IOrderFormData {
-        const payment = this.cardButton.classList.contains('button_alt-active') ? 'card' :
-                       this.cashButton.classList.contains('button_alt-active') ? 'cash' : null;
-        
-        return {
-            payment,
-            address: this.addressInput.value,
-        };
+    set address(value: string) {
+        this.addressInput.value = value;
     }
 
-    // Очистить форму
-    clear(): void {
-        this.cardButton.classList.remove('button_alt-active');
-        this.cashButton.classList.remove('button_alt-active');
-        this.addressInput.value = '';
+    render(data?: Partial<IOrderFormValidData>): HTMLElement {
+        if (data) {
+            if (data.payment !== undefined) {
+                this.payment = data.payment;
+            }
+            if (data.address !== undefined) {
+                this.address = data.address;
+            }
+        }
+        super.render(data);
+        return this.container;
     }
 }

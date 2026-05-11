@@ -11,26 +11,22 @@ export class Order {
 
     setPayment(payment: TPayment): void {
         this.payment = payment;
-        this.events.emit('order:payment:changed', { payment });
-        this.events.emit('order:changed', this.getBuyerData());
+        this.events.emit('order:changed');
     }
 
     setAddress(address: string): void {
         this.address = address;
-        this.events.emit('order:address:changed', { address });
-        this.events.emit('order:changed', this.getBuyerData());
+        this.events.emit('order:changed');
     }
 
     setEmail(email: string): void {
         this.email = email;
-        this.events.emit('order:email:changed', { email });
-        this.events.emit('order:changed', this.getBuyerData());
+        this.events.emit('order:changed');
     }
 
     setPhone(phone: string): void {
         this.phone = phone;
-        this.events.emit('order:phone:changed', { phone });
-        this.events.emit('order:changed', this.getBuyerData());
+        this.events.emit('order:changed');
     }
 
     getBuyerData(): IBuyer {
@@ -42,19 +38,15 @@ export class Order {
         };
     }
 
-    clear(): void {
-        if (this.payment !== null || this.address || this.email || this.phone) {
-            this.payment = null;
-            this.address = '';
-            this.email = '';
-            this.phone = '';
-            this.events.emit('order:cleared');
-            this.events.emit('order:changed', this.getBuyerData());
-        }
-    }
+   clear(): void {
+    this.payment = null;
+    this.address = '';
+    this.email = '';
+    this.phone = '';
+    this.events.emit('order:cleared');
+}
 
-// Валидация для первого шага (способ оплаты + адрес)
-validateAddress(): TBuyerError {
+validate(): TBuyerError {
     const errors: TBuyerError = {};
     
     if (!this.payment) {
@@ -63,14 +55,6 @@ validateAddress(): TBuyerError {
     if (!this.address.trim()) {
         errors.address = 'Не указан адрес доставки';
     }
-    
-    return errors;
-}
-
-// Валидация для второго шага (email + телефон)
-validateContacts(): TBuyerError {
-    const errors: TBuyerError = {};
-    
     if (!this.email.trim()) {
         errors.email = 'Не указан email';
     }
@@ -79,13 +63,5 @@ validateContacts(): TBuyerError {
     }
     
     return errors;
-}
-
-// Полная валидация (для отправки на сервер)
-validate(): TBuyerError {
-    return {
-        ...this.validateAddress(),
-        ...this.validateContacts()
-    };
 }
 }

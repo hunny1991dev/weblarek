@@ -9,7 +9,7 @@ export class Products {
 
     setItems(items: IProduct[]): void {
         this.items = items;
-        this.events.emit('products:loaded', this.items);
+        this.events.emit('products:loaded');
     }
 
     getItems(): IProduct[] {
@@ -22,7 +22,7 @@ export class Products {
 
     setSelectedItem(item: IProduct): void {
         this.selectedItem = item;
-        this.events.emit('products:selected', item);
+        this.events.emit('products:selected');
     }
 
     getSelectedItem(): IProduct | null {

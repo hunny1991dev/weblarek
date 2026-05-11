@@ -1,43 +1,41 @@
 import { Card, ICardData } from '../common/Card';
 import { IEvents } from '../base/Events';
+import { ensureElement } from '../../utils/utils';
+import { CDN_URL, categoryMap } from '../../utils/constants';
 
-// Дополнительные опции для карточки каталога (только колбэк при клике)
 interface ICardCatalogActions {
     onClick?: () => void;
 }
 
 export class CardCatalog extends Card<ICardData> {
-    protected buttonElement?: HTMLButtonElement;
+    protected categoryElement: HTMLElement;
+    protected imageElement: HTMLImageElement;
 
     constructor(events: IEvents, container: HTMLElement, actions?: ICardCatalogActions) {
         super(events, container);
 
-        // Ищем кнопку (если она есть в шаблоне)
-        this.buttonElement = this.container.querySelector('.card__button') as HTMLButtonElement;
+        this.categoryElement = ensureElement<HTMLElement>('.card__category', this.container);
+        this.imageElement = ensureElement<HTMLImageElement>('.card__image', this.container);
 
-        // Если кнопка есть и передан колбэк — вешаем слушатель
-        if (this.buttonElement && actions?.onClick) {
-            this.buttonElement.addEventListener('click', actions.onClick);
-        } else if (actions?.onClick) {
-            // Если кнопки нет, вешаем слушатель на всю карточку
+        if (actions?.onClick) {
             this.container.addEventListener('click', actions.onClick);
         }
     }
 
-    // Переопределяем сеттер цены с учётом блокировки кнопки
-    set price(value: number | null) {
-        if (value === null) {
-            this.priceElement.textContent = 'Недоступно';
-            if (this.buttonElement) {
-                this.buttonElement.textContent = 'Недоступно';
-                this.buttonElement.disabled = true;
-            }
-        } else {
-            this.priceElement.textContent = `${value} синапсов`;
-            if (this.buttonElement) {
-                this.buttonElement.textContent = 'Купить';
-                this.buttonElement.disabled = false;
-            }
+    set category(value: string) {
+        this.categoryElement.textContent = value;
+
+        Object.values(categoryMap).forEach(className => {
+            this.categoryElement.classList.remove(className);
+        });
+        const categoryClass = categoryMap[value as keyof typeof categoryMap];
+        if (categoryClass) {
+            this.categoryElement.classList.add(categoryClass);
         }
+    }
+
+    set image(value: string) {
+        this.imageElement.src = CDN_URL + value;
+        this.imageElement.alt = this.title || 'Товар';
     }
 }

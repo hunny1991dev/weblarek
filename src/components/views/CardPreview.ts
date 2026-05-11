@@ -1,12 +1,17 @@
 import { Card, ICardData } from '../common/Card';
 import { IEvents } from '../base/Events';
 import { ensureElement } from '../../utils/utils';
+import { CDN_URL, categoryMap } from '../../utils/constants';
 
 // Дополнительные данные для карточки превью
 interface ICardPreviewData extends ICardData {
     description: string;
-    inBasket: boolean;
-    isAvailable: boolean;
+    category: string;
+    image: string;
+    buttonState: {
+        text: string;
+        disabled: boolean;
+    };
 }
 
 interface ICardPreviewActions {
@@ -15,12 +20,16 @@ interface ICardPreviewActions {
 
 export class CardPreview extends Card<ICardPreviewData> {
     protected descriptionElement: HTMLElement;
+    protected categoryElement: HTMLElement;
+    protected imageElement: HTMLImageElement;
     protected buttonElement: HTMLButtonElement;
 
     constructor(events: IEvents, container: HTMLElement, actions?: ICardPreviewActions) {
         super(events, container);
 
         this.descriptionElement = ensureElement<HTMLElement>('.card__text', this.container);
+        this.categoryElement = ensureElement<HTMLElement>('.card__category', this.container);
+        this.imageElement = ensureElement<HTMLImageElement>('.card__image', this.container);
         this.buttonElement = ensureElement<HTMLButtonElement>('.card__button', this.container);
 
         if (actions?.onButtonClick) {
@@ -32,41 +41,25 @@ export class CardPreview extends Card<ICardPreviewData> {
         this.descriptionElement.textContent = value;
     }
 
-    // Сеттер для inBasket (только меняет текст, не блокирует)
-    set inBasket(value: boolean) {
-        // Меняем текст кнопки, только если товар доступен
-        if (this.buttonElement.disabled) return;
-        this.buttonElement.textContent = value ? 'Удалить из корзины' : 'Купить';
-    }
+    set category(value: string) {
+        this.categoryElement.textContent = value;
 
-    // Сеттер для isAvailable — главный! Он управляет блокировкой и текстом
-    set isAvailable(value: boolean) {
-        if (!value) {
-            this.buttonElement.textContent = 'Недоступно';
-            this.buttonElement.disabled = true;
-        } else {
-            this.buttonElement.disabled = false;
-            // Текст установит сеттер inBasket (будет вызван позже)
+        Object.values(categoryMap).forEach(className => {
+            this.categoryElement.classList.remove(className);
+        });
+        const categoryClass = categoryMap[value as keyof typeof categoryMap];
+        if (categoryClass) {
+            this.categoryElement.classList.add(categoryClass);
         }
     }
 
-    // Переопределяем render
-    render(data?: Partial<ICardPreviewData>): HTMLElement {
-        if (data) {
-            // Важный порядок: сначала isAvailable (от этого зависит блокировка)
-            if (data.isAvailable !== undefined) {
-                this.isAvailable = data.isAvailable;
-            }
-            // Потом остальные данные через родительский render
-            super.render(data);
-            // После super.render отдельно устанавливаем inBasket
-            if (data.inBasket !== undefined && this.buttonElement.disabled === false) {
-                this.inBasket = data.inBasket;
-            }
-            if (data.description !== undefined) {
-                this.description = data.description;
-            }
-        }
-        return this.container;
+    set image(value: string) {
+        this.imageElement.src = CDN_URL + value;
+        this.imageElement.alt = this.title || 'Товар';
+    }
+
+    set buttonState(state: { text: string; disabled: boolean }) {
+        this.buttonElement.textContent = state.text;
+        this.buttonElement.disabled = state.disabled;
     }
 }

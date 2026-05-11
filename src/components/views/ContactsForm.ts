@@ -2,7 +2,7 @@ import { Form, IFormData } from '../common/Form';
 import { IEvents } from '../base/Events';
 import { ensureElement } from '../../utils/utils';
 
-// Данные для формы контактов (шаг 2)
+// Данные для формы контактов 
 export interface IContactsFormData {
     email: string;
     phone: string;
@@ -21,31 +21,37 @@ export class ContactsForm extends Form<IContactsFormValidData> {
     constructor(events: IEvents, container: HTMLFormElement) {
         super(events, container);
 
-        // Находим поля ввода email и телефона
         this.emailInput = ensureElement<HTMLInputElement>('input[name="email"]', this.container);
         this.phoneInput = ensureElement<HTMLInputElement>('input[name="phone"]', this.container);
 
-        // Слушатели на ввод данных
         this.emailInput.addEventListener('input', () => {
-            this.events.emit('contacts:email:change', { email: this.emailInput.value });
+            events.emit('contacts:email:change', { email: this.emailInput.value });
         });
 
         this.phoneInput.addEventListener('input', () => {
-            this.events.emit('contacts:phone:change', { phone: this.phoneInput.value });
+            events.emit('contacts:phone:change', { phone: this.phoneInput.value });
         });
     }
 
-    // Получить текущие данные формы
-    getFormData(): IContactsFormData {
-        return {
-            email: this.emailInput.value,
-            phone: this.phoneInput.value,
-        };
+    set email(value: string) {
+        this.emailInput.value = value;
     }
 
-    // Очистить форму
-    clear(): void {
-        this.emailInput.value = '';
-        this.phoneInput.value = '';
+    set phone(value: string) {
+        this.phoneInput.value = value;
+    }
+
+    // Переопределяем render для обновления данных из презентера
+    render(data?: Partial<IContactsFormValidData>): HTMLElement {
+        if (data) {
+            if (data.email !== undefined) {
+                this.email = data.email;
+            }
+            if (data.phone !== undefined) {
+                this.phone = data.phone;
+            }
+        }
+        super.render(data);
+        return this.container;
     }
 }

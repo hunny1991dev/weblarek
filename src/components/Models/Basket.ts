@@ -7,11 +7,11 @@ export class Basket {
     constructor(protected events: IEvents) {}
 
     private emitChange(): void {
-        this.events.emit('basket:changed', {
-            items: this.items,
-            count: this.getCount(),
-            total: this.getTotal()
-        });
+        this.events.emit('basket:changed');
+    }
+
+    openRequest(): void {
+        this.events.emit('basket:openRequest');
     }
 
     getItems(): IProduct[] {
