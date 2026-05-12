@@ -10,10 +10,6 @@ export class Basket {
         this.events.emit('basket:changed');
     }
 
-    openRequest(): void {
-        this.events.emit('basket:openRequest');
-    }
-
     getItems(): IProduct[] {
         return this.items;
     }
@@ -41,9 +37,7 @@ export class Basket {
     }
 
     getTotal(): number {
-        return this.items.reduce((sum, item) => {
-            return sum + (item.price ?? 0);
-        }, 0);
+        return this.items.reduce((sum, item) => sum + (item.price ?? 0), 0);
     }
 
     getCount(): number {

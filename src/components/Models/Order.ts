@@ -38,30 +38,22 @@ export class Order {
         };
     }
 
-   clear(): void {
-    this.payment = null;
-    this.address = '';
-    this.email = '';
-    this.phone = '';
-    this.events.emit('order:cleared');
-}
+    clear(): void {
+        this.payment = null;
+        this.address = '';
+        this.email = '';
+        this.phone = '';
+        this.events.emit('order:changed');
+    }
 
-validate(): TBuyerError {
-    const errors: TBuyerError = {};
-    
-    if (!this.payment) {
-        errors.payment = 'Не выбран способ оплаты';
+    validate(): TBuyerError {
+        const errors: TBuyerError = {};
+
+        if (!this.payment) errors.payment = 'Не выбран способ оплаты';
+        if (!this.address.trim()) errors.address = 'Не указан адрес доставки';
+        if (!this.email.trim()) errors.email = 'Не указан email';
+        if (!this.phone.trim()) errors.phone = 'Не указан телефон';
+
+        return errors;
     }
-    if (!this.address.trim()) {
-        errors.address = 'Не указан адрес доставки';
-    }
-    if (!this.email.trim()) {
-        errors.email = 'Не указан email';
-    }
-    if (!this.phone.trim()) {
-        errors.phone = 'Не указан телефон';
-    }
-    
-    return errors;
-}
 }

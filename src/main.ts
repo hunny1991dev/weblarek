@@ -51,21 +51,14 @@ const successTemplate = document.querySelector('#success') as HTMLTemplateElemen
 
 // Компоненты, которые будут переиспользоваться
 const basketView = new BasketView(events, cloneTemplate(basketTemplate));
-basketView.isEmpty = basketModel.getCount() === 0;
+basketView.items = [];
+
 const orderForm = new OrderForm(events, cloneTemplate(orderTemplate) as HTMLFormElement);
 const contactsForm = new ContactsForm(events, cloneTemplate(contactsTemplate) as HTMLFormElement);
 const successView = new Success(events, cloneTemplate(successTemplate));
-
 const cardPreview = new CardPreview(events, cloneTemplate(cardPreviewTemplate), {
     onButtonClick: () => {
-        const product = productsModel.getSelectedItem();
-        if (!product) return;
-        if (basketModel.hasItem(product.id)) {
-            basketModel.removeItem(product.id);
-        } else {
-            basketModel.addItem(product);
-        }
-        modal.close();
+        events.emit('card:preview:button-click');
     }
 });
 
@@ -122,94 +115,61 @@ events.on('basket:changed', () => {
 });
 
 // 4. Открытие корзины
-events.on('basket:openRequest', () => {
+events.on('basket:open', () => {
     modal.render({ content: basketView.render() });
 });
 
 // 5. Обновление форм при изменении данных заказа
 events.on('order:changed', () => {
     const buyerData = orderModel.getBuyerData();
-    
     orderForm.render({
         payment: buyerData.payment,
         address: buyerData.address
     });
-    
+
     contactsForm.render({
         email: buyerData.email,
         phone: buyerData.phone
     });
-    
-    updateOrderFormValidation();
-    updateContactsFormValidation();
-    
+
     const errors = orderModel.validate();
-    if (!errors.payment && !errors.address && !errors.email && !errors.phone) {
-        modal.render({ content: contactsForm.render() });
-    }
+    orderForm.valid = !errors.payment && !errors.address;
+    contactsForm.valid = !errors.email && !errors.phone;
+
+    orderForm.errors = [errors.payment, errors.address].filter((msg): msg is string => Boolean(msg));
+    contactsForm.errors = [errors.email, errors.phone].filter((msg): msg is string => Boolean(msg));
 });
 
-// 6. Очистка форм
-events.on('order:cleared', () => {
-    orderForm.render({
-        payment: null,
-        address: ''
-    });
-    contactsForm.render({
-        email: '',
-        phone: ''
-    });
-    updateOrderFormValidation();
-    updateContactsFormValidation();
-    modal.render({ content: orderForm.render() });
+// 6. Обработчик успешного заказа
+events.on('order:submit', () => {
+    modal.render({ content: contactsForm.render() });
 });
 
-// 7. Успешный заказ
-events.on('order:success', (data: { total: number }) => {
-    successView.total = data.total;
-    modal.render({ content: successView.render() });
+// 7. Отправка заказа
+events.on('contacts:submit', () => {
+    const orderData = {
+        ...orderModel.getBuyerData(),
+        total: basketModel.getTotal(),
+        items: basketModel.getItems().map(item => item.id)
+    };
+    
+    webLarekApi.createOrder(orderData)
+        .then(result => {
+            basketModel.clear();
+            orderModel.clear();
+            successView.total = result.total;
+            modal.render({ content: successView.render() });
+        })
+        .catch(error => {
+            console.error('Ошибка оформления заказа:', error);
+            contactsForm.errors = ['Ошибка оформления заказа. Попробуйте позже.'];
+        });
 });
 
 // Вспомогательные функции обновления валидации
-function updateOrderFormValidation() {
-    const errors = orderModel.validate();
-    const hasPaymentError = !!errors.payment;
-    const hasAddressError = !!errors.address;
-    const isValid = !hasPaymentError && !hasAddressError;
-    
-    orderForm.valid = isValid;
-    const errorMessages = [errors.payment, errors.address].filter((msg): msg is string => Boolean(msg));
-    orderForm.errors = errorMessages;
-}
-
-function updateContactsFormValidation() {
-    const errors = orderModel.validate();
-    const hasEmailError = !!errors.email;
-    const hasPhoneError = !!errors.phone;
-    const isValid = !hasEmailError && !hasPhoneError;
-    
-    contactsForm.valid = isValid;
-    const errorMessages = [errors.email, errors.phone].filter((msg): msg is string => Boolean(msg));
-    contactsForm.errors = errorMessages;
-}
-
 function updateBasketView() {
-    const items = basketModel.getItems();
-    let basketCards: HTMLElement[];
-    
-    if (items.length === 0) {
-        basketView.items = [];
-        basketView.isEmpty = true;
-        basketView.total = 0;
-
-        const listContainer = document.querySelector('.basket__list');
-        if (listContainer) {
-            listContainer.innerHTML = '<p style="text-align:center;padding:20px">Корзина пуста</p>';
-        }
-        return;
-    }
-    
-    basketCards = items.map((product, index) => {
+    const items = basketModel.getItems();  
+    const basketCards = items.map((product, index) => {
         const card = new CardBasket(events, cloneTemplate(cardBasketTemplate), {
             onDelete: () => {
                 basketModel.removeItem(product.id);
@@ -222,7 +182,6 @@ function updateBasketView() {
     });
     
     basketView.items = basketCards;
-    basketView.isEmpty = false;
     basketView.total = basketModel.getTotal();
 }
 
@@ -231,38 +190,21 @@ events.on('card:select', (product: IProduct) => {
     productsModel.setSelectedItem(product);
 });
 
-
-events.on('basket:open', () => {
-    basketModel.openRequest();
-});
-
-
 events.on('basket:submit', () => {
     orderModel.clear();
+    modal.render({ content: orderForm.render() });
 });
 
-
-events.on('order:submit', () => {
-    modal.render({ content: contactsForm.render() });
-});
-
-events.on('contacts:submit', () => {
-    const orderData = {
-        ...orderModel.getBuyerData(),
-        total: basketModel.getTotal(),
-        items: basketModel.getItems().map(item => item.id)
-    };
+events.on('card:preview:button-click', () => {
+    const product = productsModel.getSelectedItem();
+    if (!product) return;
     
-    webLarekApi.createOrder(orderData)
-        .then(result => {
-            basketModel.clear();
-            orderModel.clear();
-            events.emit('order:success', { total: result.total });
-        })
-        .catch(error => {
-            console.error('Ошибка оформления заказа:', error);
-            contactsForm.errors = ['Ошибка оформления заказа. Попробуйте позже.'];
-        });
+    if (basketModel.hasItem(product.id)) {
+        basketModel.removeItem(product.id);
+    } else {
+        basketModel.addItem(product);
+    }
+    modal.close();
 });
 
 const closeModal = () => modal.close();
